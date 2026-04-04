@@ -1,0 +1,23 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "build with winsock",
+            "type": "shell",
+            "command": "g++",
+            "args": [
+		"-std=c++20",
+                "-g",
+                "${workspaceFolder}/server.cpp",
+                "-o",
+                "${workspaceFolder}/server.exe",
+                "-lws2_32"                
+            ],
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            },
+            "problemMatcher": ["$gcc"]
+        }
+    ]
+}

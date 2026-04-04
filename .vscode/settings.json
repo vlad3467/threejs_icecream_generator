@@ -1,0 +1,17 @@
+{
+  "C_Cpp.intelliSenseEngine": "disabled",
+  "C_Cpp.autocomplete": "disabled",
+  "C_Cpp.formatting": "disabled",
+  "C_Cpp.codeAnalysis.enabled": false,
+
+
+  "clangd.arguments": [
+    "--background-index",
+    "--clang-tidy",
+    "--all-scopes-completion",
+    "--header-insertion=never",
+    "-j=2"
+  ],
+  "clangd.onConfigChanged": "restart",
+  "python-envs.defaultEnvManager": "ms-python.python:system"
+}

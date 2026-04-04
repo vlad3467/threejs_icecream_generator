@@ -1,0 +1,1365 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Генератор мороженого</title>
+    
+    <!-- ========================================== -->
+    <!-- БАЗОВЫЕ СТИЛИ СТРАНИЦЫ                      -->
+    <!-- ========================================== -->
+    <style>
+        /* ----- Глобальные настройки ----- */
+        body {
+            margin: 0;
+            overflow: hidden;
+            font-family: Arial, sans-serif;
+            background: linear-gradient(135deg, #1a2a3a 0%, #2a3a4a 100%);
+        }
+
+        /* ----- Подсказка в левом нижнем углу ----- */
+        #controls-note {
+            position: absolute;
+            bottom: 20px;
+            left: 20px;
+            color: rgba(255,255,255,0.5);
+            background: rgba(0,0,0,0.3);
+            padding: 8px 15px;
+            border-radius: 20px;
+            font-size: 14px;
+            z-index: 100;
+        }
+
+        /* ========================================== */
+        /* СТИЛИ ДЛЯ СИСТЕМЫ АВТОРИЗАЦИИ И СЛОТОВ     */
+        /* ========================================== */
+        
+        /* ----- Контейнер формы авторизации ----- */
+        .auth-container {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0, 0, 0, 0.85);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 30px;
+            text-align: center;
+            display: none;
+            border: 1px solid rgba(255,255,255,0.2);
+            min-width: 300px;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+
+        .auth-container h2 {
+            color: white;
+            margin-bottom: 20px;
+            font-size: 28px;
+        }
+
+        .auth-container input {
+            width: 100%;
+            padding: 12px;
+            margin: 10px 0;
+            border: 1px solid rgba(255,255,255,0.3);
+            background: rgba(255,255,255,0.1);
+            color: white;
+            border-radius: 8px;
+            font-size: 16px;
+            box-sizing: border-box;
+        }
+
+        .auth-container input::placeholder {
+            color: rgba(255,255,255,0.5);
+        }
+
+        .auth-container button {
+            width: 100%;
+            padding: 12px;
+            margin: 10px 0;
+            background: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 18px;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+
+        .auth-container button:hover {
+            background: #45a049;
+        }
+
+        /* ----- Кнопка переключения режима ----- */
+        #auth-switch-btn {
+            background: transparent;
+            color: #4CAF50;
+            border: 1px solid #4CAF50;
+            margin-top: 5px;
+        }
+
+        #auth-switch-btn:hover {
+            background: rgba(76, 175, 80, 0.1);
+        }
+
+        /* ----- Сообщения об ошибках и успехе ----- */
+        #auth-error {
+            color: #ff6b6b;
+            font-size: 14px;
+            margin-top: 10px;
+            display: none;
+        }
+
+        #auth-success {
+            color: #4CAF50;
+            font-size: 14px;
+            margin-top: 10px;
+            display: none;
+        }
+
+        /* ----- Стили для слотов сохранения ----- */
+        .slots {
+            margin-top: 30px;
+            text-align: center;
+        }
+
+        .slots h3 {
+            color: white;
+            margin-bottom: 20px;
+            font-size: 20px;
+        }
+
+        .slots-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 15px;
+            margin-top: 10px;
+        }
+
+        /* ----- Карточка слота ----- */
+        .slot-card {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            padding: 15px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+        }
+
+        .slot-card:hover {
+            transform: scale(1.05);
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        /* ----- Пустой слот (пунктирная рамка) ----- */
+        .slot-card.empty {
+            border: 2px dashed rgba(255, 255, 255, 0.3);
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        /* ----- Заполненный слот (цветной фон) ----- */
+        .slot-card:not(.empty) {
+            border: 2px solid rgba(76, 175, 80, 0.6);
+            background: rgba(76, 175, 80, 0.15);
+        }
+
+        .slot-number {
+            font-size: 18px;
+            font-weight: bold;
+            margin-bottom: 10px;
+            color: white;
+        }
+
+        .slot-stats {
+            font-size: 12px;
+            margin: 5px 0;
+            color: rgba(255, 255, 255, 0.9);
+        }
+
+        .slot-stats span {
+            display: inline-block;
+            margin: 0 3px;
+        }
+
+        .slot-ball { color: #ff6b6b; }
+        .slot-strawberry { color: #ff99cc; }
+        .slot-lemon { color: #ffd966; }
+
+        /* ----- Приветственный контейнер (после входа) ----- */
+        .welcome-container {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: rgba(0,0,0,0.7);
+            padding: 10px 20px;
+            border-radius: 20px;
+            color: white;
+            z-index: 200;
+            display: none;
+            font-size: 14px;
+        }
+
+        .welcome-container button {
+            margin-left: 10px;
+            padding: 5px 10px;
+            background: #ff6b6b;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        .welcome-container button:hover {
+            background: #ff5252;
+        }
+
+        /* ----- Панель отображения текущего счета ----- */
+        #ingredients-display { 
+            position: absolute;
+            top: 20px; 
+            left: 20px; 
+            color: white; 
+            background: rgba(0, 0, 0, 0.6);
+            backdrop-filter: blur(8px);
+            padding: 12px 20px; 
+            border-radius: 30px; 
+            font-family: Arial, sans-serif;
+            font-size: 16px;
+            font-weight: bold;
+            z-index: 1000;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            letter-spacing: 1px;
+        }
+
+        #score-ball { color: #ff6b6b; }
+        #score-strawberry { color: #ff99cc; }
+        #score-lemon { color: #ffd966; }
+
+        /* ----- Таймер в правом нижнем углу ----- */
+        #timer-display {
+            position: absolute;
+            bottom: 30px;
+            right: 30px;
+            color: white;
+            background: rgba(0, 0, 0, 0.7);
+            backdrop-filter: blur(8px);
+            padding: 15px 25px;
+            border-radius: 50px;
+            font-family: 'Arial', sans-serif;
+            font-size: 32px;
+            font-weight: bold;
+            z-index: 1000;
+            border: 1px solid rgba(255, 215, 0, 0.5);
+            letter-spacing: 2px;
+            display: none;
+        }
+
+        /* ----- Модальное окно окончания игры ----- */
+        .game-over-modal {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0, 0, 0, 0.95);
+            backdrop-filter: blur(15px);
+            border-radius: 25px;
+            padding: 35px;
+            text-align: center;
+            z-index: 2000;
+            border: 2px solid rgba(255, 215, 0, 0.6);
+            min-width: 350px;
+            display: none;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .game-over-modal h2 {
+            color: #ffd700;
+            margin: 0;
+            font-size: 32px;
+        }
+
+        .game-over-modal p {
+            color: white;
+            font-size: 18px;
+            margin: 0;
+        }
+
+        .game-over-modal .score-summary {
+            background: rgba(255,255,255,0.1);
+            padding: 15px;
+            border-radius: 15px;
+        }
+
+        .game-over-modal button {
+            padding: 12px 25px;
+            margin: 5px 10px;
+            border: none;
+            border-radius: 30px;
+            font-size: 18px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: bold;
+        }
+
+        .game-over-modal .save-btn {
+            background: #4CAF50;
+            color: white;
+        }
+
+        .game-over-modal .save-btn:hover {
+            background: #45a049;
+            transform: scale(1.05);
+        }
+
+        .game-over-modal .restart-btn {
+            background: #ff6b6b;
+            color: white;
+        }
+
+        .game-over-modal .restart-btn:hover {
+            background: #ff5252;
+            transform: scale(1.05);
+        }
+    </style>
+
+    <!-- ========================================== -->
+    <!-- ИМПОРТЫ ТРЕХМЕРНЫХ БИБЛИОТЕК               -->
+    <!-- ========================================== -->
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "https://unpkg.com/three@0.128.0/build/three.module.js",
+                "three/addons/": "https://unpkg.com/three@0.128.0/examples/jsm/"
+            }
+        }
+    </script>
+
+</head>
+<body>
+
+    <!-- ========================================== -->
+    <!-- ОСНОВНЫЕ HTML-КОНТЕЙНЕРЫ                    -->
+    <!-- ========================================== -->
+    
+    <!-- Контейнер авторизации и выбора слота -->
+    <div class="auth-container" id="auth-container">
+        <!-- Форма входа/регистрации -->
+        <div class="auth" id="auth">
+            <h2 id="auth-title">Вход</h2>
+            <input type="text" id="username" placeholder="Имя пользователя">
+            <input type="password" id="password" placeholder="Пароль">
+            <button id="auth-submit">Войти</button>
+            <button id="auth-switch-btn">Нет аккаунта? Зарегистрироваться</button>
+            <div id="auth-error"></div>
+            <div id="auth-success"></div>
+        </div>
+
+        <!-- Панель выбора слота -->
+        <div class="slots" id="slots">
+            <h3>Выбери слот</h3>
+            <div class="slots-grid" id="slots-grid"></div>
+        </div>
+    </div>
+
+    <!-- Приветственная панель (после входа) -->
+    <div id="welcome-container" class="welcome-container">
+        <span id="welcome-text"></span>
+        <button id="logout-btn">Выйти</button>
+    </div>
+
+    <!-- Панель отображения счета -->
+    <div id="ingredients-display">
+        Счет: <span class="slot-ball"> Balls</span> <span id="score-ball">0</span> | 
+        <span class="slot-strawberry"> Strawberries</span> <span id="score-strawberry">0</span> | 
+        <span class="slot-lemon"> Lemon </span> <span id="score-lemon">0</span>
+    </div>
+
+    <!-- Таймер игры -->
+    <div id="timer-display">20.0</div>
+
+    <!-- Модальное окно окончания игры -->
+    <div id="game-over-modal" class="game-over-modal">
+        <h2>TIME'S UP!</h2>
+        <div class="score-summary">
+            <p>Your result:</p>
+            <p>Balls: <span id="final-ball">0</span></p>
+            <p>Strawberries: <span id="final-strawberry">0</span></p>
+            <p>Lemons: <span id="final-lemon">0</span></p>
+        </div>
+        <div>
+            <button class="save-btn" id="save-and-restart-btn">Save</button>
+            <button class="restart-btn" id="restart-btn">Quit</button>
+        </div>
+    </div>
+
+    <!-- ========================================== -->
+    <!-- ОСНОВНОЙ СКРИПТ ИГРЫ                       -->
+    <!-- ========================================== -->
+    <script type="module">
+
+        // ----- ПОДКЛЮЧЕНИЕ БИБЛИОТЕК -----
+        import * as THREE from 'three';
+        import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+
+        // ==========================================
+        //  КОНФИГУРАЦИЯ И ГЛОБАЛЬНЫЕ ПЕРЕМЕННЫЕ
+        // ==========================================
+        
+        // URL для запросов к серверу
+        const API_URL = 'http://localhost:5000';
+
+        // ----- Элементы UI -----
+        const authContainer = document.getElementById('auth-container');
+        const auth = document.getElementById('auth');
+        const welcomeContainer = document.getElementById('welcome-container');
+        const authTitle = document.getElementById('auth-title');
+        const usernameInput = document.getElementById('username');
+        const passwordInput = document.getElementById('password');
+        const authSubmit = document.getElementById('auth-submit');
+        const authSwitchBtn = document.getElementById('auth-switch-btn');
+        const authError = document.getElementById('auth-error');
+        const authSuccess = document.getElementById('auth-success');
+        const welcomeText = document.getElementById('welcome-text');
+        const logoutBtn = document.getElementById('logout-btn');
+        const slots = document.getElementById('slots');
+        const slotsGrid = document.getElementById('slots-grid');
+        const ingredientsDisplay = document.getElementById('ingredients-display');
+        const timerDisplay = document.getElementById('timer-display');
+        const gameOverModal = document.getElementById('game-over-modal');
+
+        // ----- Инициализация Three.js сцены -----
+        const scene = new THREE.Scene();
+        scene.background = new THREE.Color(0x223344);
+
+        // Камера (перспективная)
+        const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 1000);
+        camera.position.set(5, 3, 8);
+        camera.lookAt(0, 1, 0);
+
+        // Рендерер
+        const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.shadowMap.enabled = true;
+        renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+        renderer.setPixelRatio(window.devicePixelRatio);
+        document.body.appendChild(renderer.domElement);
+
+        // ----- Система освещения -----
+        const ambientLight = new THREE.AmbientLight(0x404060);
+        scene.add(ambientLight);
+
+        // Направленный свет (сверху)
+        const dirLight = new THREE.DirectionalLight(0xffffff, 1.2);
+        dirLight.position.set(0, 30, 0);
+        dirLight.castShadow = true;
+        dirLight.shadow.camera.left = -15;
+        dirLight.shadow.camera.right = 15;
+        dirLight.shadow.camera.top = -5;
+        dirLight.shadow.camera.bottom = -25;
+        dirLight.shadow.camera.near = 0.5;
+        dirLight.shadow.camera.far = 50;
+        dirLight.shadow.mapSize.width = 1024;
+        dirLight.shadow.mapSize.height = 1024;
+        scene.add(dirLight);
+
+        // Фоновый свет
+        const backLight = new THREE.PointLight(0x446688, 0.8);
+        backLight.position.set(-3, 2, 3);
+        scene.add(backLight);
+
+        // Нижний свет
+        const bottomLight = new THREE.PointLight(0x334455, 0.5);
+        bottomLight.position.set(0, 2, 5);
+        scene.add(bottomLight);
+
+        dirLight.shadow.bias = -0.0001;
+        dirLight.shadow.normalBias = 0.05;
+
+        // ----- Состояние авторизации -----
+        let isLoginMode = true;          // true = вход, false = регистрация
+        let currentUser = null;          // данные текущего пользователя
+        let slotNumber = 0;              // номер выбранного слота
+
+        // ----- Переменные для анимации камеры (начальная заставка) -----
+        let model = null;
+        let cube1 = null;
+        let startButton = null;
+        let startTime = null;
+        let animationStarted = false;
+        let cubeMoveComplete = false;
+        let cameraMoveComplete1 = false;
+        let cameraMoveComplete2 = false;
+        let gameLoaded = false;
+        let gameStarted = false;
+        let gameOver = false;
+
+        // ----- Игровые объекты -----
+        let basketModel = null;      // визуальная модель корзины
+        let basketCollider = null;   // объект коллизии корзины (basketcol)
+        let arenaModel = null;       // модель арены
+
+        // ----- Модели предметов (шаблоны для клонирования) -----
+        let ballModel = null;
+        let strawberryModel = null;
+        let lemonModel = null;
+
+        // ----- Игровое состояние -----
+        let fallingItems = [];       // массив падающих предметов
+        let gameActive = false;      // активна ли игра
+        let gameInterval = null;     // интервал спавна предметов
+        let lastTime = 0;            // время последнего кадра
+        let deltaTime = 0;           // время между кадрами
+        let currentTime = 0;         // текущее время
+
+        // ----- Таймер -----
+        let timerInterval = null;
+        let timeLeft = 20.0;
+
+        // ----- Счет пойманных предметов -----
+        let score = {
+            ball: 0,
+            strawberry: 0,
+            lemon: 0
+        };
+
+        // ----- Управление корзиной (WASD) -----
+        let keys = { w: false, a: false, s: false, d: false };
+        let basketSpeed = 5;
+
+        // ----- Границы движения корзины -----
+        const bounds = {
+            minX: -14,
+            maxX: 14,
+            minZ: -8 + 15,
+            maxZ: 8 + 15
+        };
+
+        // Для raycasting (клик по кнопке старта)
+        const raycaster = new THREE.Raycaster();
+        const mouse = new THREE.Vector2();
+
+        // ==========================================
+        //  КЛАСС ПАДАЮЩЕГО ПРЕДМЕТА
+        // ==========================================
+        class FallingItem {
+            constructor(model, type, position, velocity) {
+                this.model = model;           // 3D модель
+                this.type = type;             // 'ball', 'strawberry', 'lemon'
+                this.position = position;     // { x, y, z }
+                this.velocity = velocity;     // { x, y, z }
+                this.gravity = 9.8;           // ускорение свободного падения
+                this.isCaught = false;         // пойман ли предмет
+                
+                // Установка начальной позиции модели
+                this.model.position.set(position.x, position.y, position.z);
+            }
+            
+            // Обновление позиции на основе скорости и гравитации
+            update() {
+                // Применяем гравитацию к вертикальной скорости
+                this.velocity.y -= this.gravity * deltaTime;
+                
+                // Обновляем координаты
+                this.position.x += this.velocity.x * deltaTime;
+                this.position.y += this.velocity.y * deltaTime;
+                this.position.z += this.velocity.z * deltaTime;
+                
+                // Обновляем модель в сцене
+                this.model.position.set(this.position.x, this.position.y, this.position.z);
+                
+                // Вращение для эффекта
+                this.model.rotation.y += 0.02;
+            }
+            
+            // Проверка столкновения с корзиной (через bounding box коллизии)
+            isInBasketCollider(basketColliderObj) {
+                const basketBox = new THREE.Box3().setFromObject(basketColliderObj);
+                const itemBox = new THREE.Box3().setFromObject(this.model);
+                return basketBox.intersectsBox(itemBox);
+            }
+            
+            // Удаление предмета из сцены
+            dispose() {
+                scene.remove(this.model);
+            }
+        }
+
+        // ==========================================
+        //  РАБОТА СО СЛОТАМИ СОХРАНЕНИЯ
+        // ==========================================
+        
+        // Загрузка всех 6 слотов пользователя с сервера
+        async function loadSlots() {
+            if (!currentUser) return;
+            try {
+                const promises = [];
+                for (let i = 1; i <= 6; i++) {
+                    promises.push(fetch(`${API_URL}/api/remind`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ 
+                            userId: currentUser.userId, 
+                            slotNumber: i 
+                        })
+                    }));
+                }
+                
+                const responses = await Promise.all(promises);
+                const slotsData = [];
+                
+                for (let i = 0; i < responses.length; i++) {
+                    const data = await responses[i].json();
+                    if (data.success) {
+                        slotsData.push({
+                            slotNumber: i + 1,
+                            ball: data.slot.ball,
+                            strawberry: data.slot.strawberry,
+                            lemon: data.slot.lemon
+                        });
+                    } else {
+                        slotsData.push({
+                            slotNumber: i + 1,
+                            ball: 0,
+                            strawberry: 0,
+                            lemon: 0
+                        });
+                    }
+                }
+                
+                renderSlots(slotsData);
+                
+            } catch (error) {
+                console.error('Ошибка загрузки слотов:', error);
+                showError('Ошибка загрузки слотов');
+            }
+        }
+        
+        // Отрисовка слотов на странице
+        function renderSlots(slotsData) {
+            slotsGrid.innerHTML = '';
+            slots.style.display = 'block';
+            
+            slotsData.forEach(slot => {
+                const hasResources = slot.ball > 0 || slot.strawberry > 0 || slot.lemon > 0;
+                
+                const slotCard = document.createElement('div');
+                slotCard.className = `slot-card ${!hasResources ? 'empty' : ''}`;
+                slotCard.setAttribute('data-slot', slot.slotNumber);
+                
+                slotCard.innerHTML = `
+                    <div class="slot-number">Слот ${slot.slotNumber}</div>
+                    <div class="slot-stats">
+                        <span class="slot-ball">Balls: ${slot.ball}</span>
+                        <span class="slot-strawberry">Strawberries: ${slot.strawberry}</span>
+                        <span class="slot-lemon">Lemons: ${slot.lemon}</span>
+                    </div>
+                `;
+                
+                slotCard.addEventListener('click', () => {
+                    onSlotClick(slot.slotNumber);
+                });
+                
+                slotsGrid.appendChild(slotCard);
+            });
+        }
+        
+        // Обработчик выбора слота
+        function onSlotClick(slotNumber) {
+            console.log(`Слот ${slotNumber} выбран`);
+            currentUser.slotNumber = slotNumber;
+            authContainer.style.display = 'none';
+            welcomeContainer.style.display = 'none';
+            gameStarted = true;
+        }
+
+        // ==========================================
+        //  ФУНКЦИИ АВТОРИЗАЦИИ
+        // ==========================================
+        
+        function showError(message) {
+            authError.textContent = message;
+            authError.style.display = 'block';
+            setTimeout(() => {
+                authError.style.display = 'none';
+            }, 3000);
+        }
+
+        function showSuccess(message) {
+            authSuccess.textContent = message;
+            authSuccess.style.display = 'block';
+            setTimeout(() => {
+                authSuccess.style.display = 'none';
+            }, 3000);
+        }
+
+        // Вход в систему
+        async function login(username, password) {
+            try {
+                const response = await fetch(`${API_URL}/api/login`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username, password })
+                });
+                const data = await response.json();
+
+                if (response.ok) {
+                    currentUser = { username: data.username, userId: data.user_id };
+                    welcomeText.textContent = `${username}`;
+                    auth.style.display = 'none';
+                    welcomeContainer.style.display = 'block';
+                    await loadSlots();
+                    showSuccess('Вход выполнен!');
+                    return true;
+                } else {
+                    showError(data.error || 'Ошибка входа');
+                    return false;
+                }
+            } catch (error) {
+                showError('Ошибка соединения с сервером');
+                return false;
+            }
+        }
+
+        // Регистрация нового пользователя
+        async function register(username, password) {
+            try {
+                const response = await fetch(`${API_URL}/api/register`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username, password })
+                });
+                const data = await response.json();
+
+                if (response.ok) {
+                    currentUser = { username: data.username, userId: data.user_id };
+                    welcomeText.textContent = `${username}`;
+                    auth.style.display = 'none';
+                    welcomeContainer.style.display = 'block';
+                    await loadSlots();
+                    showSuccess('Регистрация успешна!');
+                    return true;
+                } else {
+                    showError(data.error || 'Ошибка регистрации');
+                    return false;
+                }
+            } catch (error) {
+                showError('Ошибка соединения с сервером');
+                return false;
+            }
+        }
+
+        // Выход из системы
+        function logout() {
+            currentUser = null;
+            welcomeContainer.style.display = 'none';
+            slots.style.display = 'none';
+            authContainer.style.display = 'block';
+            auth.style.display = 'block';
+            usernameInput.value = '';
+            passwordInput.value = '';
+            isLoginMode = true;
+            authTitle.textContent = 'Вход';
+            authSubmit.textContent = 'Войти';
+            authSwitchBtn.textContent = 'Нет аккаунта? Зарегистрироваться';
+        }
+
+        // Переключение между режимами "Вход" и "Регистрация"
+        function switchMode(login) {
+            isLoginMode = login;
+            if (isLoginMode) {
+                authTitle.textContent = 'Вход';
+                authSubmit.textContent = 'Войти';
+                authSwitchBtn.textContent = 'Нет аккаунта? Зарегистрироваться';
+            } else {
+                authTitle.textContent = 'Регистрация';
+                authSubmit.textContent = 'Зарегистрироваться';
+                authSwitchBtn.textContent = 'Уже есть аккаунт? Войти';
+            }
+            authError.style.display = 'none';
+            authSuccess.style.display = 'none';
+        }
+
+        // ----- Обработчики UI кнопок -----
+        authSubmit.addEventListener('click', async () => {
+            const username = usernameInput.value.trim();
+            const password = passwordInput.value.trim();
+
+            if (!username || !password) {
+                showError('Заполните все поля');
+                return;
+            }
+
+            if (isLoginMode) {
+                await login(username, password);
+            } else {
+                await register(username, password);
+            }
+        });
+
+        authSwitchBtn.addEventListener('click', () => {
+            switchMode(!isLoginMode);
+        });
+
+        logoutBtn.addEventListener('click', () => {
+            logout();
+        });
+
+        // ==========================================
+        //  ЗАГРУЗКА 3D МОДЕЛЕЙ
+        // ==========================================
+        
+        const loader = new GLTFLoader();
+
+        // Загрузка начальной модели с кнопкой старта
+        loader.load(
+            '/models/machine.glb',
+            function (gltf) {
+                model = gltf.scene;
+                scene.add(model);
+
+                model.traverse(node => {
+                    if (node.isMesh) {
+                        node.castShadow = true;
+                        node.receiveShadow = true;
+                    }
+                });
+
+                cube1 = model.getObjectByName('Cube1');
+                startButton = model.getObjectByName('startbutton');
+                if (startButton) {
+                    startButton.visible = false;
+                }
+                startTime = performance.now();
+            },
+            undefined,
+            function (error) {
+                console.error('Ошибка загрузки модели:', error);
+            }
+        );
+
+        // Создание корзины с коллизией
+        function createBasketWithCollider(gltfScene) {
+            basketModel = gltfScene;
+            basketModel.position.set(0, -5, 15);
+            scene.add(basketModel);
+            
+            basketModel.traverse(node => {
+                if (node.isMesh) {
+                    node.castShadow = true;
+                    node.receiveShadow = true;
+                }
+            });
+            
+            // Поиск встроенного коллайдера "basketcol"
+            basketCollider = basketModel.getObjectByName('basketcol');
+            
+            if (basketCollider) {
+                basketCollider.visible = false;
+                
+                // Отладка: сделать коллизию видимой
+                if (window.debugMode) {
+                    basketCollider.visible = true;
+                    basketCollider.material.transparent = true;
+                    basketCollider.material.opacity = 0.5;
+                    basketCollider.material.color.setHex(0xff0000);
+                }
+            }
+            
+            console.log('Корзина создана');
+        }
+
+        // Загрузка всех игровых моделей
+        function loadGame() {
+            if (gameLoaded) return;
+            gameLoaded = true;
+
+            // Загрузка корзины
+            loader.load('/models/basket.glb',
+                function (gltf) {
+                    createBasketWithCollider(gltf.scene);
+                    console.log('Basket загружен');
+                },
+                undefined,
+                function (error) {
+                    console.error('Ошибка загрузки basket.glb:', error);
+                }
+            );
+
+            // Загрузка арены
+            loader.load('/models/arena.glb',
+                function (gltf) {
+                    arenaModel = gltf.scene;
+                    arenaModel.position.set(0, -5, 15);
+                    arenaModel.traverse(node => {
+                        if (node.isMesh) {
+                            node.receiveShadow = true;
+                        }
+                    });
+                    scene.add(arenaModel);
+                    console.log('Arena загружен');
+                },
+                undefined,
+                function (error) {
+                    console.error('Ошибка загрузки arena.glb:', error);
+                }
+            );
+
+            // Загрузка моделей предметов (шаблоны)
+            loader.load('/models/ball.glb',
+                function (gltf) {
+                    ballModel = gltf.scene;
+                    console.log('ball загружен');
+                },
+                undefined,
+                function (error) {
+                    console.error('Ошибка загрузки ball.glb:', error);
+                }
+            );
+
+            loader.load('/models/strawberry.glb',
+                function (gltf) {
+                    strawberryModel = gltf.scene;
+                    console.log('strawberry загружен');
+                },
+                undefined,
+                function (error) {
+                    console.error('Ошибка загрузки strawberry.glb:', error);
+                }
+            );
+
+            loader.load('/models/lemon.glb',
+                function (gltf) {
+                    lemonModel = gltf.scene;
+                    console.log('lemon загружен');
+                },
+                undefined,
+                function (error) {
+                    console.error('Ошибка загрузки lemon.glb:', error);
+                }
+            );
+        }
+
+        // ==========================================
+        //  УПРАВЛЕНИЕ ИГРОВЫМ ПРОЦЕССОМ
+        // ==========================================
+        
+        // Настройка обработчиков клавиш WASD
+        function setupKeyboardControls() {
+            window.addEventListener('keydown', (event) => {
+                switch(event.code) {
+                    case 'KeyW': keys.w = true; break;
+                    case 'KeyA': keys.a = true; break;
+                    case 'KeyS': keys.s = true; break;
+                    case 'KeyD': keys.d = true; break;
+                }
+            });
+            
+            window.addEventListener('keyup', (event) => {
+                switch(event.code) {
+                    case 'KeyW': keys.w = false; break;
+                    case 'KeyA': keys.a = false; break;
+                    case 'KeyS': keys.s = false; break;
+                    case 'KeyD': keys.d = false; break;
+                }
+            });
+        }
+
+        // Движение корзины
+        function updateBasketMovement() {
+            if (!basketModel) return;
+            
+            let moveX = 0;
+            let moveZ = 0;
+            
+            if (keys.w) moveZ -= 1;
+            if (keys.s) moveZ += 1;
+            if (keys.a) moveX -= 1;
+            if (keys.d) moveX += 1;
+            
+            if (moveX !== 0 && moveZ !== 0) {
+                moveX *= 0.707;
+                moveZ *= 0.707;
+            }
+            
+            let newX = basketModel.position.x + moveX * basketSpeed * deltaTime;
+            let newZ = basketModel.position.z + moveZ * basketSpeed * deltaTime;
+            
+            newX = Math.max(bounds.minX, Math.min(bounds.maxX, newX));
+            newZ = Math.max(bounds.minZ, Math.min(bounds.maxZ, newZ));
+            
+            basketModel.position.x = newX;
+            basketModel.position.z = newZ;
+        }
+
+        // Создание нового падающего предмета
+        function spawnFallingItem() {
+            if (!gameActive) return;
+            if (!ballModel || !strawberryModel || !lemonModel) {
+                console.log("Модели еще не загружены");
+                return;
+            }
+            
+            const types = ['ball', 'strawberry', 'lemon'];
+            const randomType = types[Math.floor(Math.random() * types.length)];
+            
+            let model;
+            switch(randomType) {
+                case 'ball':
+                    model = ballModel.clone();
+                    break;
+                case 'strawberry':
+                    model = strawberryModel.clone();
+                    break;
+                case 'lemon':
+                    model = lemonModel.clone();
+                    break;
+            }
+            
+            model.traverse(node => {
+                if (node.isMesh) {
+                    node.castShadow = true;
+                    node.receiveShadow = true;
+                }
+            });
+            
+            const position = { x: 0, y: 0, z: 0 };
+            
+            const velocity = {
+                x: (Math.random() - 0.5) * 6,
+                y: 7 + Math.random() * 5,
+                z: 4 + Math.random() * 5
+            };
+            
+            const item = new FallingItem(model, randomType, position, velocity);
+            scene.add(model);
+            fallingItems.push(item);
+        }
+
+        // Обновление отображения счета на экране
+        function updateScoreDisplay() {
+            const ballSpan = document.getElementById('score-ball');
+            const strawberrySpan = document.getElementById('score-strawberry');
+            const lemonSpan = document.getElementById('score-lemon');
+            
+            if (ballSpan) ballSpan.textContent = score.ball;
+            if (strawberrySpan) strawberrySpan.textContent = score.strawberry;
+            if (lemonSpan) lemonSpan.textContent = score.lemon;
+        }
+
+        // Запуск таймера обратного отсчета
+        function startTimer() {
+            timerDisplay.style.display = 'block';
+            timeLeft = 20.0;
+            
+            if (timerInterval) clearInterval(timerInterval);
+            
+            timerInterval = setInterval(() => {
+                if (!gameActive) return;
+                
+                timeLeft -= 0.1;
+                
+                if (timeLeft <= 0) {
+                    clearInterval(timerInterval);
+                    timerInterval = null;
+                    stopGame();
+                    
+                    document.getElementById('final-ball').textContent = score.ball;
+                    document.getElementById('final-strawberry').textContent = score.strawberry;
+                    document.getElementById('final-lemon').textContent = score.lemon;
+                    gameOverModal.style.display = 'block';
+                } else {
+                    timerDisplay.textContent = timeLeft.toFixed(1);
+                }
+            }, 100);
+        }
+
+        // Запуск игры
+        function startGame() {
+            if (gameActive) return;
+            if (gameInterval) clearInterval(gameInterval);
+            
+            gameActive = true;
+            
+            // Спавн предметов каждые 0.3 секунды
+            gameInterval = setInterval(() => {
+                if (gameActive) {
+                    spawnFallingItem();
+                }
+            }, 300);
+            
+            startTimer();
+            console.log('Игра запущена');
+        }
+
+        // Остановка игры
+        function stopGame() {
+            gameOver = true;
+        
+            if (gameInterval) {
+                clearInterval(gameInterval);
+                gameInterval = null;
+            }
+            if (timerInterval) {
+                clearInterval(timerInterval);
+                timerInterval = null;
+            }
+
+            timerDisplay.style.display = "none";
+            ingredientsDisplay.style.display = "none";
+            
+            // Очистка всех падающих предметов
+            for (let item of fallingItems) {
+                item.dispose();
+            }
+            fallingItems = [];
+            
+            console.log('Игра окончена');
+        }
+
+        // Обновление всех падающих предметов и проверка столкновений
+        function updateFallingItems() {
+            for (let i = 0; i < fallingItems.length; i++) {
+                const item = fallingItems[i];
+                item.update();
+                
+                // Проверка столкновения с корзиной
+                if (item.isInBasketCollider(basketCollider)) {
+                    score[item.type]++;
+                    updateScoreDisplay();
+                    
+                    // Создание клона для отображения в корзине
+                    let caughtModel;
+                    switch(item.type) {
+                        case 'ball':
+                            caughtModel = ballModel.clone();
+                            break;
+                        case 'strawberry':
+                            caughtModel = strawberryModel.clone();
+                            break;
+                        case 'lemon':
+                            caughtModel = lemonModel.clone();
+                            break;
+                    }
+
+                    basketModel.add(caughtModel);
+                    
+                    const localX = item.position.x - basketModel.position.x;
+                    const localZ = item.position.z - basketModel.position.z;
+                    caughtModel.position.set(localX, 2, localZ);
+                    
+                    const scale = 0.5 + Math.random() * 0.5;
+                    caughtModel.scale.set(scale, scale, scale);
+                    
+                    // Удаление оригинального предмета
+                    item.dispose();
+                    fallingItems.splice(i, 1);
+                    i--;
+                }
+                // Удаление упавших ниже уровня
+                else if (item.position.y < -6) {
+                    item.dispose();
+                    fallingItems.splice(i, 1);
+                    i--;
+                }
+            }
+        }
+
+        // ==========================================
+        // СОХРАНЕНИЕ ПРОГРЕССА
+        // ==========================================
+        
+        async function saveProgress() {
+            if (!currentUser || !currentUser.slotNumber) {
+                console.error('Нет пользователя или слота');
+                return;
+            }
+            
+            try {
+                const response = await fetch(`${API_URL}/api/save`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        username: currentUser.username,
+                        slotNumber: currentUser.slotNumber,
+                        ball: score.ball,
+                        strawberry: score.strawberry,
+                        lemon: score.lemon
+                    })
+                });
+                
+                const data = await response.json();
+                if (response.ok) {
+                    console.log('Прогресс сохранен:', data);
+                } else {
+                    console.error('Ошибка сохранения:', data.error);
+                }
+            } catch (error) {
+                console.error('Ошибка соединения:', error);
+            }
+        }
+
+        // ==========================================
+        // АНИМАЦИЯ КАМЕРЫ (НАЧАЛЬНАЯ ЗАСТАВКА)
+        // ==========================================
+        
+        // Обработка клика по кнопке startbutton
+        renderer.domElement.addEventListener('click', (event) => {
+            if (!startButton || animationStarted || cubeMoveComplete) return;
+
+            mouse.x = (event.clientX / renderer.domElement.clientWidth) * 2 - 1;
+            mouse.y = -(event.clientY / renderer.domElement.clientHeight) * 2 + 1;
+
+            raycaster.setFromCamera(mouse, camera);
+            const intersects = raycaster.intersectObject(startButton, true);
+
+            if (intersects.length > 0) {
+                animationStarted = true;
+                if (startButton.parent) {
+                    startButton.parent.remove(startButton);
+                }
+                startButton = null;
+            }
+        });
+
+        // Вспомогательная функция для плавного перемещения
+        function deltaX(animObj, currentTime, endValue, duration) {
+            if (!animObj.startTime) {
+                animObj.startTime = currentTime;
+                animObj.startValue = animObj.currentValue;
+                return animObj.startValue;
+            }
+
+            const elapsed = currentTime - animObj.startTime;
+            const progress = Math.min(elapsed / duration, 1);
+
+            const easeProgress = progress < 0.5
+                ? 2 * progress * progress
+                : 1 - Math.pow(-2 * progress + 2, 2) / 2;
+
+            const newValue = animObj.startValue + (endValue - animObj.startValue) * easeProgress;
+            animObj.currentValue = newValue;
+            return newValue;
+        }
+
+        // Плавное перемещение объекта
+        function moveTo(object, targetX, targetY, targetZ, duration) {
+            if (!object.userData.animX) {
+                object.userData.animX = { currentValue: object.position.x };
+                object.userData.animY = { currentValue: object.position.y };
+                object.userData.animZ = { currentValue: object.position.z };
+            }
+
+            const now = performance.now();
+            let completed = true;
+
+            const newX = deltaX(object.userData.animX, now, targetX, duration);
+            object.position.x = newX;
+            if (object.userData.animX.startTime && (now - object.userData.animX.startTime) < duration) completed = false;
+
+            const newY = deltaX(object.userData.animY, now, targetY, duration);
+            object.position.y = newY;
+            if (object.userData.animY.startTime && (now - object.userData.animY.startTime) < duration) completed = false;
+
+            const newZ = deltaX(object.userData.animZ, now, targetZ, duration);
+            object.position.z = newZ;
+            if (object.userData.animZ.startTime && (now - object.userData.animZ.startTime) < duration) completed = false;
+
+            if (completed) {
+                delete object.userData.animX;
+                delete object.userData.animY;
+                delete object.userData.animZ;
+                object.userData = {};
+                return true;
+            }
+            return false;
+        }
+
+        // Основной анимационный цикл
+        function animate() {
+            requestAnimationFrame(animate);
+
+            currentTime = performance.now();
+            deltaTime = (currentTime - lastTime) / 1000;
+            if (deltaTime > 0.033) deltaTime = 0.033;
+            lastTime = currentTime;
+
+            // Анимация падающего куба
+            if (!cubeMoveComplete && animationStarted) {
+                if (moveTo(cube1, cube1.position.x, cube1.position.y - 2, cube1.position.z, 2000)) {
+                    cubeMoveComplete = true;
+                }
+            }
+
+            // Первое движение камеры
+            if (cubeMoveComplete && !cameraMoveComplete1) {
+                if (moveTo(camera, 0, 0, 4, 2000)) {
+                    cameraMoveComplete1 = true;
+                    authContainer.style.display = 'block';
+                }
+                camera.lookAt(0, 0, 0);
+            }
+
+            // Второе движение камеры и загрузка игры
+            if (cameraMoveComplete1 && !cameraMoveComplete2 && gameStarted) {
+                loadGame();
+                if (moveTo(camera, 0, 10, 45, 2000)) {
+                    cameraMoveComplete2 = true;
+                }
+                camera.lookAt(0, 0, 15);
+            }
+
+            // Запуск игры после завершения анимации камеры
+            if (cameraMoveComplete2 && !gameActive){
+                startGame();
+                ingredientsDisplay.style.display = 'block';
+            }
+
+            // Обновление игровой логики
+            if (gameActive && !gameOver){
+                setupKeyboardControls();
+                updateBasketMovement();
+                updateFallingItems();
+                updateScoreDisplay();
+            }
+
+            renderer.render(scene, camera);
+        }
+
+        // Запуск анимации
+        animate();
+
+        // ==========================================
+        // ОБРАБОТЧИКИ СОБЫТИЙ И НАЧАЛЬНЫЕ НАСТРОЙКИ
+        // ==========================================
+        
+        // Адаптация при изменении размера окна
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+
+        // Скрытие элементов при старте
+        authContainer.style.display = 'none';
+        slots.style.display = 'none';
+        ingredientsDisplay.style.display = 'none';
+        timerDisplay.style.display = 'none';
+
+        // Обработчики кнопок модального окна окончания игры
+        document.getElementById('save-and-restart-btn').addEventListener('click', async () => {
+            gameOverModal.style.display = 'none';
+            await saveProgress();
+            location.reload();
+        });
+
+        document.getElementById('restart-btn').addEventListener('click', () => {
+            gameOverModal.style.display = 'none';
+            location.reload();
+        });
+
+    </script>
+</body>
+</html>
