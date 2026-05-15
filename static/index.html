@@ -513,6 +513,7 @@
         let lastTime = 0;            // время последнего кадра
         let deltaTime = 0;           // время между кадрами
         let currentTime = 0;         // текущее время
+        let caughtIngredients = [];  // сохранённые данные о пойманных объектах для показа
 
         // ----- Таймер -----
         let timerInterval = null;
@@ -617,14 +618,16 @@
                             slotNumber: i + 1,
                             ball: data.slot.ball,
                             strawberry: data.slot.strawberry,
-                            lemon: data.slot.lemon
+                            lemon: data.slot.lemon,
+                            ice_cream_link: data.slot.ice_cream_link
                         });
                     } else {
                         slotsData.push({
                             slotNumber: i + 1,
                             ball: 0,
                             strawberry: 0,
-                            lemon: 0
+                            lemon: 0,
+                            ice_cream_link: null  // null для пустых слотов
                         });
                     }
                 }
@@ -649,14 +652,26 @@
                 slotCard.className = `slot-card ${!hasResources ? 'empty' : ''}`;
                 slotCard.setAttribute('data-slot', slot.slotNumber);
                 
-                slotCard.innerHTML = `
+                let innerHTML = `
                     <div class="slot-number">Слот ${slot.slotNumber}</div>
                     <div class="slot-stats">
                         <span class="slot-ball">Balls: ${slot.ball}</span>
                         <span class="slot-strawberry">Strawberries: ${slot.strawberry}</span>
                         <span class="slot-lemon">Lemons: ${slot.lemon}</span>
-                    </div>
-                `;
+                    </div>`;
+                
+                // Добавляем ссылку на мороженое если она есть
+                if (slot.ice_cream_link) {
+                    innerHTML += `
+                        <div style="margin-top: 10px;">
+                            <a href="${slot.ice_cream_link}" target="_blank" 
+                            style="color: #4CAF50; text-decoration: none; font-size: 14px;">
+                                🍦 Посмотреть мороженое
+                            </a>
+                        </div>`;
+                }
+                
+                slotCard.innerHTML = innerHTML;
                 
                 slotCard.addEventListener('click', () => {
                     onSlotClick(slot.slotNumber);
@@ -1125,10 +1140,22 @@
                 const item = fallingItems[i];
                 item.update();
                 
-                // Проверка столкновения с корзиной
                 if (item.isInBasketCollider(basketCollider)) {
                     score[item.type]++;
                     updateScoreDisplay();
+                    
+                    // Сохраняем локальную позицию относительно basketModel
+                    const localPosition = {
+                        x: item.position.x - basketModel.position.x,
+                        y: item.position.y - basketModel.position.y,
+                        z: item.position.z - basketModel.position.z
+                    };
+                    
+                    // Сохраняем данные о пойманном ингредиенте
+                    caughtIngredients.push({
+                        type: item.type,
+                        position: localPosition
+                    });
                     
                     // Создание клона для отображения в корзине
                     let caughtModel;
@@ -1145,20 +1172,15 @@
                     }
 
                     basketModel.add(caughtModel);
-                    
-                    const localX = item.position.x - basketModel.position.x;
-                    const localZ = item.position.z - basketModel.position.z;
-                    caughtModel.position.set(localX, 2, localZ);
+                    caughtModel.position.set(localPosition.x, localPosition.y, localPosition.z);
                     
                     const scale = 0.5 + Math.random() * 0.5;
                     caughtModel.scale.set(scale, scale, scale);
                     
-                    // Удаление оригинального предмета
                     item.dispose();
                     fallingItems.splice(i, 1);
                     i--;
                 }
-                // Удаление упавших ниже уровня
                 else if (item.position.y < -6) {
                     item.dispose();
                     fallingItems.splice(i, 1);
@@ -1186,13 +1208,19 @@
                         slotNumber: currentUser.slotNumber,
                         ball: score.ball,
                         strawberry: score.strawberry,
-                        lemon: score.lemon
+                        lemon: score.lemon,
+                        ingredients: caughtIngredients
                     })
                 });
                 
                 const data = await response.json();
                 if (response.ok) {
                     console.log('Прогресс сохранен:', data);
+                    if (data.data.ice_cream_link) {
+                        console.log('Ссылка на мороженое:', data.data.ice_cream_link);
+                        // Открываем ссылку в новой вкладке
+                        window.open(data.data.ice_cream_link, '_blank');
+                    }
                 } else {
                     console.error('Ошибка сохранения:', data.error);
                 }
